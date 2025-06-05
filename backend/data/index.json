@@ -1,0 +1,29 @@
+{
+  "next_id": 5,
+  "documents": [
+    {
+      "doc_id": "DOC001",
+      "filename": "dummy.pdf",
+      "extraction_method": "pdf-text",
+      "upload_time": "2025-06-01T09:07:21Z"
+    },
+    {
+      "doc_id": "DOC002",
+      "filename": "s11227-024-06602-y.pdf",
+      "extraction_method": "pdf-text",
+      "upload_time": "2025-06-01T09:16:31Z"
+    },
+    {
+      "doc_id": "DOC003",
+      "filename": "Wasserstoff Gen-AI Internship Task.pdf",
+      "extraction_method": "pdf-text",
+      "upload_time": "2025-06-01T09:19:22Z"
+    },
+    {
+      "doc_id": "DOC004",
+      "filename": "A_Spatio-_Temporl_Deepfake_Video_Detection_Method_Based_on_TimeSformer-CNN (1).pdf",
+      "extraction_method": "pdf-text",
+      "upload_time": "2025-06-03T05:47:52Z"
+    }
+  ]
+}
