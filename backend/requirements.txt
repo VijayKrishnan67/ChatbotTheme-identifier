@@ -1,5 +1,10 @@
 fastapi
 uvicorn[standard]
-pymupdf
 easyocr
 pillow
+pytesseract
+python-multipart
+chromadb
+groq
+PyMuPDF>=1.22.5                   # fitz for PDF text extraction
+sentence-transformers     # for your embedding model

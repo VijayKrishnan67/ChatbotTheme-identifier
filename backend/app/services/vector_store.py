@@ -1,44 +1,54 @@
 import os
 import chromadb
-from ..core.embedding import embed_text
+from app.core.embedding import embed_text
 
-CHROMA_DIR = os.path.join(os.path.dirname(__file__), "..", "chroma_db")
-client = chromadb.PersistentClient(path=CHROMA_DIR)
-collection = client.get_or_create_collection(
-    name="doc_chunks",
-    metadata={"hnsw:space": "cosine"}
-)
+# Persistent ChromaDB directory
+VECTOR_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "chroma_db")
+client = chromadb.PersistentClient(path=VECTOR_DB_DIR)
+
+def get_vector_collection():
+    return client.get_or_create_collection(
+        name="doc_chunks",
+        metadata={"hnsw:space": "cosine"}
+    )
 
 def add_chunks_to_vector_store(doc_id: str, chunks: list[dict]):
-    ids, metadatas, documents, embeddings = [], [], [], []
-    for chunk in chunks:
-        unique_id = f"{doc_id}__p{chunk['page_number']}__c{chunk['chunk_id']}"
-        ids.append(unique_id)
+    collection = get_vector_collection()
+    ids, metadatas, docs, embs = [], [], [], []
+    for c in chunks:
+        uid = f"{doc_id}__p{c['page_number']}__c{c['chunk_id']}"
+        ids.append(uid)
         metadatas.append({
             "doc_id": doc_id,
-            "page_number": chunk["page_number"],
-            "chunk_id": chunk["chunk_id"]
+            "page_number": c["page_number"],
+            "chunk_id": c["chunk_id"]
         })
-        documents.append(chunk["text"])
-        embeddings.append(embed_text(chunk["text"]))
-    collection.add(ids=ids, metadatas=metadatas, documents=documents, embeddings=embeddings)
+        docs.append(c["text"])
+        embs.append(embed_text(c["text"]))
+    collection.add(ids=ids, metadatas=metadatas, documents=docs, embeddings=embs)
 
 def query_top_k(question: str, top_k: int = 5, doc_ids: list[str] = None) -> list[dict]:
-    q_embedding = embed_text(question)
-    where = None
+    collection = get_vector_collection()
+    q_emb = embed_text(question)
+    kwargs = {"query_embeddings": [q_emb], "n_results": top_k}
     if doc_ids:
-        where = {"doc_id": {"$in": doc_ids}}
-    results = collection.query(
-        query_embeddings=[q_embedding],
-        n_results=top_k,
-        where=where
-    )
-    retrieved = []
-    for idx in range(len(results["ids"][0])):
-        retrieved.append({
-            "id": results["ids"][0][idx],
-            "metadata": results["metadatas"][0][idx],
-            "text": results["documents"][0][idx],
-            "distance": results["distances"][0][idx]
+        kwargs["where"] = {"doc_id": {"$in": doc_ids}}
+    res = collection.query(**kwargs)
+    out = []
+    for i in range(len(res["ids"][0])):
+        out.append({
+            "id": res["ids"][0][i],
+            "metadata": res["metadatas"][0][i],
+            "text": res["documents"][0][i],
+            "distance": res["distances"][0][i]
         })
-    return retrieved
+    return out
+
+def delete_doc_chunks(doc_id: str):
+    if not os.path.exists(VECTOR_DB_DIR):
+        return
+    collection = get_vector_collection()
+    all_ids = collection.get()["ids"]
+    ids_to_delete = [id for id in all_ids if id.startswith(f"{doc_id}__")]
+    if ids_to_delete:
+        collection.delete(ids=ids_to_delete)
